@@ -8,3 +8,7 @@
 *.deb
 /soal_2/bochslog.txt
 /soal_2/build
+
+# Ignore files inside osboot
+/soal_1/osboot/*
+!/soal_1/osboot/.gitkeep
