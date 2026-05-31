@@ -12,3 +12,6 @@
 # Ignore files inside osboot
 /soal_1/osboot/*
 !/soal_1/osboot/.gitkeep
+
+# Ignore downloaded busybox
+/soal_1/busybox-musl
