@@ -1,0 +1,10 @@
+# Ignore root files not present in the image
+/fusing.c
+
+# Ignore compiled/generated artifacts in soal_2
+*.o
+*.bin
+*.img
+*.deb
+/soal_2/bochslog.txt
+/soal_2/build
