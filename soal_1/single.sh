@@ -94,15 +94,20 @@ mount -t proc none /proc 2>/dev/null || true
 mount -t sysfs none /sys 2>/dev/null || true
 mount -t devtmpfs none /dev 2>/dev/null || true
 
-# Network setup
-ip link set lo up 2>/dev/null || /bin/busybox ip link set lo up 2>/dev/null || true
-for iface in eth0 ens3 ens4 enp0s3; do
-    ip link set "$iface" up 2>/dev/null || /bin/busybox ip link set "$iface" up 2>/dev/null || true
-    udhcpc -i "$iface" -t 5 -q 2>/dev/null || /bin/busybox udhcpc -i "$iface" -t 5 -q 2>/dev/null && break || true
-done
+# Enable SysRq so poweroff/reboot work
+echo 1 > /proc/sys/kernel/sysrq
+
+# Network fully in background - shell appears instantly
+( ip link set lo up; ip link set eth0 up; udhcpc -i eth0 -t 3 -q ) >/dev/null 2>&1 &
 
 exec /bin/sh
 EOF
+
+# Custom poweroff/halt/reboot using SysRq (works without ACPI)
+printf '#!/bin/sh\necho 1 > /proc/sys/kernel/sysrq\necho o > /proc/sysrq-trigger\n' > rootfs/bin/poweroff
+printf '#!/bin/sh\necho 1 > /proc/sys/kernel/sysrq\necho o > /proc/sysrq-trigger\n' > rootfs/bin/halt
+printf '#!/bin/sh\necho 1 > /proc/sys/kernel/sysrq\necho b > /proc/sysrq-trigger\n' > rootfs/bin/reboot
+chmod +x rootfs/bin/poweroff rootfs/bin/halt rootfs/bin/reboot
 
 chmod +x rootfs/init
 

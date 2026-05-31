@@ -7,7 +7,10 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-apt install -y qemu-system-x86 2>/dev/null || apt install -y qemu-system-x86_64 2>/dev/null || true
+# Only install QEMU if not already present (skip slow apt on every run)
+if ! command -v qemu-system-x86_64 >/dev/null 2>&1; then
+    apt install -y qemu-system-x86 2>/dev/null || apt install -y qemu-system-x86_64 2>/dev/null || true
+fi
 
 case "$1" in
     --single)
@@ -15,8 +18,9 @@ case "$1" in
         qemu-system-x86_64 \
             -kernel osboot/bzImage \
             -initrd osboot/single.gz \
-            -append "single console=ttyS0 console=tty0 root=/dev/ram0 rw" \
+            -append "console=ttyS0 root=/dev/ram0 rw quiet loglevel=0 panic=1" \
             -m 512M \
+            -no-reboot \
             -nographic \
             -net nic,model=virtio \
             -net user
@@ -26,8 +30,9 @@ case "$1" in
         qemu-system-x86_64 \
             -kernel osboot/bzImage \
             -initrd osboot/multi.gz \
-            -append "console=ttyS0 console=tty0 root=/dev/ram0 rw" \
+            -append "console=ttyS0 root=/dev/ram0 rw quiet loglevel=0 panic=1" \
             -m 512M \
+            -no-reboot \
             -nographic \
             -net nic,model=virtio \
             -net user

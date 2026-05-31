@@ -16,8 +16,15 @@ rm -rf rootfs
 # Buat struktur direktori sesuai spek
 mkdir -p rootfs/{bin,sbin,usr/bin,usr/sbin,dev,proc,sys,etc,tmp,root,home/{henn,hann,viii,kids}}
 
-cp /bin/busybox rootfs/bin/
+# Use official static busybox without PAM to avoid login hang
+if [ ! -f "busybox-musl" ]; then
+    echo "Downloading PAM-free busybox..."
+    wget -qO busybox-musl https://busybox.net/downloads/binaries/1.35.0-x86_64-linux-musl/busybox
+    chmod +x busybox-musl
+fi
+cp busybox-musl rootfs/bin/busybox
 chroot rootfs /bin/busybox --install -s
+
 
 cp -a /dev/{null,console,tty,zero} rootfs/dev/
 
@@ -69,25 +76,16 @@ touch rootfs/etc/group
 touch rootfs/etc/fstab
 chmod 600 rootfs/etc/shadow
 
+# Create var dirs + login tracking files (busybox login needs these to not hang)
+mkdir -p rootfs/var/run rootfs/var/log rootfs/var/lib
+touch rootfs/var/run/utmp
+touch rootfs/var/log/wtmp
+touch rootfs/var/log/lastlog
+chmod 664 rootfs/var/run/utmp rootfs/var/log/wtmp rootfs/var/log/lastlog
+
 # Root user
 echo "root:x:0:0:root:/root:/bin/sh" > rootfs/etc/passwd
-echo "root:!:0:0:99999:7:::" > rootfs/etc/shadow
 echo "root:x:0:" > rootfs/etc/group
-
-# Users: henn(1001), hann(1002), viii(1003), kids(1004)
-cat >> rootfs/etc/passwd << 'PASSWD'
-henn:x:1001:1001:henn:/home/henn:/bin/sh
-hann:x:1002:1002:hann:/home/hann:/bin/sh
-viii:x:1003:1003:viii:/home/viii:/bin/sh
-kids:x:1004:1004:kids:/home/kids:/bin/sh
-PASSWD
-
-cat >> rootfs/etc/shadow << 'SHADOW'
-henn:!:0:0:99999:7:::
-hann:!:0:0:99999:7:::
-viii:!:0:0:99999:7:::
-kids:!:0:0:99999:7:::
-SHADOW
 
 # Primary groups + access tier groups:
 #   g_hann(2003): henn, hann       -> full access to /home/hann
@@ -103,12 +101,31 @@ g_viii:x:2002:henn,hann,viii
 g_kids:x:2001:henn,hann,viii,kids
 GROUP
 
-# Set passwords
-chroot rootfs /bin/sh -c 'echo "root:root123" | chpasswd' 2>/dev/null || true
-chroot rootfs /bin/sh -c 'echo "henn:henn123" | chpasswd' 2>/dev/null || true
-chroot rootfs /bin/sh -c 'echo "hann:hann123" | chpasswd' 2>/dev/null || true
-chroot rootfs /bin/sh -c 'echo "viii:viii123" | chpasswd' 2>/dev/null || true
-chroot rootfs /bin/sh -c 'echo "kids:kids123" | chpasswd' 2>/dev/null || true
+# Users: henn(1001), hann(1002), viii(1003), kids(1004)
+cat >> rootfs/etc/passwd << 'PASSWD'
+henn:x:1001:1001:henn:/home/henn:/bin/sh
+hann:x:1002:1002:hann:/home/hann:/bin/sh
+viii:x:1003:1003:viii:/home/viii:/bin/sh
+kids:x:1004:1004:kids:/home/kids:/bin/sh
+PASSWD
+
+# Generate MD5 password hashes at build time (MD5 supported by all busybox versions)
+hash_root=$(openssl passwd -1 -salt "sysop01" "root123")
+hash_henn=$(openssl passwd -1 -salt "sysop02" "henn123")
+hash_hann=$(openssl passwd -1 -salt "sysop03" "hann123")
+hash_viii=$(openssl passwd -1 -salt "sysop04" "viii123")
+hash_kids=$(openssl passwd -1 -salt "sysop05" "kids123")
+
+# Write shadow with real password hashes (format: user:hash:lastchg:min:max:warn:::)
+cat > rootfs/etc/shadow << SHADOW
+root:${hash_root}:19900:0:99999:7:::
+henn:${hash_henn}:19900:0:99999:7:::
+hann:${hash_hann}:19900:0:99999:7:::
+viii:${hash_viii}:19900:0:99999:7:::
+kids:${hash_kids}:19900:0:99999:7:::
+SHADOW
+chmod 640 rootfs/etc/shadow
+
 
 #
 #  ACCESS CONTROL  #
@@ -139,6 +156,15 @@ chmod 1777 rootfs/tmp
 # DNS resolver
 printf "nameserver 8.8.8.8\nnameserver 1.1.1.1\n" > rootfs/etc/resolv.conf
 
+# Hostname (shows as prompt prefix)
+echo "farewell" > rootfs/etc/hostname
+
+# Hosts file - prevents login from hanging on DNS lookup
+printf "127.0.0.1\tlocalhost farewell\n::1\t\tlocalhost\n" > rootfs/etc/hosts
+
+# NSSwitch - use files only, prevents NIS/LDAP timeout
+printf "passwd:    files\nshadow:    files\ngroup:     files\nhosts:     files\n" > rootfs/etc/nsswitch.conf
+
 # TLS bypass for wget
 echo "check_certificate = off" > rootfs/etc/wgetrc
 
@@ -146,11 +172,7 @@ echo "check_certificate = off" > rootfs/etc/wgetrc
 mkdir -p rootfs/etc/init.d
 cat << 'NETINIT' > rootfs/etc/init.d/network
 #!/bin/sh
-ip link set lo up 2>/dev/null || /bin/busybox ip link set lo up 2>/dev/null || true
-for iface in eth0 ens3 ens4 enp0s3; do
-    ip link set "$iface" up 2>/dev/null || /bin/busybox ip link set "$iface" up 2>/dev/null || true
-    udhcpc -i "$iface" -t 5 -q 2>/dev/null || /bin/busybox udhcpc -i "$iface" -t 5 -q 2>/dev/null && break || true
-done
+( ip link set lo up; ip link set eth0 up; udhcpc -i eth0 -t 3 -q ) >/dev/null 2>&1 &
 NETINIT
 chmod +x rootfs/etc/init.d/network
 
@@ -218,10 +240,18 @@ cat << 'EOF' > rootfs/etc/inittab
 ::sysinit:/bin/mount -t sysfs sysfs /sys
 ::sysinit:/bin/mount -t devtmpfs devtmpfs /dev
 ::sysinit:/etc/init.d/network
-::respawn:/sbin/getty -L 115200 tty0 vt100
+ttyS0::respawn:/sbin/getty -L 115200 ttyS0 vt100
+tty0::respawn:/sbin/getty -L 115200 tty0 vt100
 ::ctrlaltdel:/sbin/reboot
 ::shutdown:/bin/umount -a -r
 EOF
+
+# Custom poweroff/halt/reboot using SysRq (works without ACPI)
+printf '#!/bin/sh\necho 1 > /proc/sys/kernel/sysrq\necho o > /proc/sysrq-trigger\n' > rootfs/bin/poweroff
+printf '#!/bin/sh\necho 1 > /proc/sys/kernel/sysrq\necho o > /proc/sysrq-trigger\n' > rootfs/bin/halt
+printf '#!/bin/sh\necho 1 > /proc/sys/kernel/sysrq\necho b > /proc/sysrq-trigger\n' > rootfs/bin/reboot
+chmod +x rootfs/bin/poweroff rootfs/bin/halt rootfs/bin/reboot
+
 
 #
 #  FINAL PACKAGING  #
