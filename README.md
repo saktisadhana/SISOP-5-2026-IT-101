@@ -234,15 +234,15 @@ henn : x  : 1001 : 1001 : henn : /home/henn : /bin/sh
  ①    ②     ③      ④      ⑤         ⑥            ⑦
 ```
 
-| # | Field | Isi di baris `henn` | Pembahasan |
-|---|-------|---------------------|-----------|
-| ① | Username | `henn` | Nama yang diketik saat prompt `login:`. Harus unik di sistem. |
-| ② | Password | `x` | Bukan password sesungguhnya. Nilai `x` berarti password tersimpan terenkripsi di `/etc/shadow`. Sebelum shadow password ada, hash password disimpan langsung di sini, tapi Soalnya `/etc/passwd` bisa dibaca siapapun, ini nggak aman. |
-| ③ | UID | `1001` | **User ID** - angka unik yang mengidentifikasi user di level kernel. UID 0 = root (superuser pake akses penuh). UID 1–999 biasanya dicadangkan Buat system accounts. UID ≥ 1000 Buat user manusia biasa. kita mulai dari 1001 biar nggak bentrok pake system accounts. `henn`=1001, `hann`=1002, `viii`=1003, `kids`=1004 - setiap user bisa UID unik yang increment. |
-| ④ | GID | `1001` | **Primary Group ID** - grup utama user. Angka 1001 merujuk ke entry di `/etc/group` yang punya GID 1001, yaitu grup primer bernama `henn`. Konvensi umum di Linux: setiap user punya grup primer sendiri pake GID yang sama persis pake UID-nya. |
-| ⑤ | GECOS | `henn` | Field komentar opsional Buat informasi tambahan (nama lengkap, nomor telepon, dsb.). Di sini cukup nama user saja. |
-| ⑥ | Home directory | `/home/henn` | Direktori yang jadi working directory saat user login. Shell akan `cd` ke sini otomatis Abis login berhasil. |
-| ⑦ | Login shell | `/bin/sh` | Program yang dijalankan Abis login. `/bin/sh` adalah BusyBox ash shell. kalau diisi `/sbin/nologin`, user nggak bisa login interaktif (biasanya Buat service accounts). |
+| #   | Field          | Isi di baris `henn` | Pembahasan                                                                                                                                                                                                                                                                                                                                                            |
+| --- | -------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Username       | `henn`              | Nama yang diketik saat prompt `login:`. Harus unik di sistem.                                                                                                                                                                                                                                                                                                         |
+| 2   | Password       | `x`                 | Bukan password sesungguhnya. Nilai `x` berarti password tersimpan terenkripsi di `/etc/shadow`. Sebelum shadow password ada, hash password disimpan langsung di sini, tapi Soalnya `/etc/passwd` bisa dibaca siapapun, ini nggak aman.                                                                                                                                |
+| 3   | UID            | `1001`              | **User ID** - angka unik yang mengidentifikasi user di level kernel. UID 0 = root (superuser pake akses penuh). UID 1–999 biasanya dicadangkan Buat system accounts. UID ≥ 1000 Buat user manusia biasa. kita mulai dari 1001 biar nggak bentrok pake system accounts. `henn`=1001, `hann`=1002, `viii`=1003, `kids`=1004 - setiap user bisa UID unik yang increment. |
+| 4   | GID            | `1001`              | **Primary Group ID** - grup utama user. Angka 1001 merujuk ke entry di `/etc/group` yang punya GID 1001, yaitu grup primer bernama `henn`. Konvensi umum di Linux: setiap user punya grup primer sendiri pake GID yang sama persis pake UID-nya.                                                                                                                      |
+| 5   | GECOS          | `henn`              | Field komentar opsional Buat informasi tambahan (nama lengkap, nomor telepon, dsb.). Di sini cukup nama user saja.                                                                                                                                                                                                                                                    |
+| 6   | Home directory | `/home/henn`        | Direktori yang jadi working directory saat user login. Shell akan `cd` ke sini otomatis Abis login berhasil.                                                                                                                                                                                                                                                          |
+| 7   | Login shell    | `/bin/sh`           | Program yang dijalankan Abis login. `/bin/sh` adalah BusyBox ash shell. kalau diisi `/sbin/nologin`, user nggak bisa login interaktif (biasanya Buat service accounts).                                                                                                                                                                                               |
 
 ###### Sistem Group Buat Access Control
 
@@ -258,12 +258,12 @@ GROUP
 
 Format `/etc/group` terdiri dari **empat field** dipisahkan titik dua. Contoh `g_hann:x:2003:henn,hann`:
 
-| # | Field | Isi | Pembahasan |
-|---|-------|-----|-----------|
-| ① | Group name | `g_hann` | Nama grup. Prefiks `g_` Buat membedakan dari grup primer user. |
-| ② | Password | `x` | Group password, jarang dipake. `x` berarti gunakan `/etc/gshadow`. |
-| ③ | GID | `2003` | Group ID unik. kita pilih range 2001–2003 biar nggak bentrok pake GID primer user (1001–1004) maupun system groups (0–999). |
-| ④ | Members | `henn,hann` | Daftar username yang jadi anggota grup ini, dipisahkan koma. |
+| #   | Field      | Isi         | Pembahasan                                                                                                                  |
+| --- | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Group name | `g_hann`    | Nama grup. Prefiks `g_` Buat membedakan dari grup primer user.                                                              |
+| 2   | Password   | `x`         | Group password, jarang dipake. `x` berarti gunakan `/etc/gshadow`.                                                          |
+| 3   | GID        | `2003`      | Group ID unik. kita pilih range 2001–2003 biar nggak bentrok pake GID primer user (1001–1004) maupun system groups (0–999). |
+| 4   | Members    | `henn,hann` | Daftar username yang jadi anggota grup ini, dipisahkan koma.                                                                |
 
 Hierarki akses yang dibangun:
 
@@ -454,32 +454,33 @@ esac
 #### Output
 
 1. Ngejalanin `kernel.sh` (kompilasi kernel)
-
-   *(Di output bakal keliatan proses `make` yang compile kernel Linux, diakhiri pake path bzImage yang berhasil dibikin)*
-
+![Pasted image 20260605105220.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105220.png)
+![Pasted image 20260605105903.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105903.png)
 2. Ngejalanin `single.sh`
-
-   *(Di output bakal keliatan instalasi BusyBox dan proses `cpio` yang mengemas rootfs jadi `single.gz`)*
-
+![Pasted image 20260605110057.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605110057.png)
+![Pasted image 20260605110030.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605110030.png)
 3. Ngejalanin `multi.sh`
 
-   *(Di output bakal keliatan pembuatan user/group dan proses packaging rootfs multi-user jadi `multi.gz`)*
+![Pasted image 20260605110120.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605110120.png)
+![Pasted image 20260605110204.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605110204.png)
+4. `iso.sh`
+![Pasted image 20260605110431.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605110431.png)
+![Pasted image 20260605110446.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605110446.png)
 
-4. Booting Single User Mode (`sudo ./qemu.sh --single`)
+5. Booting Single User Mode (`sudo ./qemu.sh --single`)
 
-   *(Sistem langsung masuk ke shell `/ #` tanpa prompt login)*
+![Pasted image 20260605110234.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605110234.png)
 
 5. Booting Multi User Mode (`sudo ./qemu.sh --multi`)
 
-   *(Sistem menampilkan prompt login. Login sebagai `henn` pake password `henn123` berhasil masuk ke `/home/henn`)*
+![Pasted image 20260605110305.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605110305.png)
 
 6. Pengujian access control
 
-   *(User `kids` mencoba `cd /home/henn` dan mendapat `Permission denied`. User `henn` bisa mengakses semua direktori home)*
-
+![Pasted image 20260605110338.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605110338.png)
 7. Ngejalanin `iso.sh` dan booting dari ISO (`sudo ./qemu.sh --all`)
 
-   *(Muncul menu GRUB pake dua pilihan: "Farewell - Single User Mode" dan "Farewell - Multi User Mode")*
+![Pasted image 20260605110506.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605110506.png)
 
 #### Kendala / Error
 
@@ -1177,47 +1178,46 @@ run:
 
 1. Ngejalanin `make build`
 
-   *(Di output bakal keliatan proses nasm, bcc, ld86, dan dd yang nulis bootloader dan kernel ke floppy.img)*
+![Pasted image 20260605105826.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105826.png)
 
 2. Ngejalanin `bochs -f bochsrc.txt`
 
-   *(Bochs muncul dan layar menampilkan banner "Welcome to Assistant's Last Gift")*
+![Pasted image 20260605105404.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105404.png)
 
 3. Perintah `check`
-
-   *(Menampilkan `ok`)*
+![Pasted image 20260605105419.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105419.png)
 
 4. Perintah `add 15 27`
-
-   *(Menampilkan `42`)*
+![Pasted image 20260605105441.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105441.png)
 
 5. Perintah `sub 100 37`
 
-   *(Menampilkan `63`)*
+![Pasted image 20260605105506.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105506.png)
 
 6. Perintah `fac 7`
 
-   *(Menampilkan `5040`)*
+![Pasted image 20260605105525.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105525.png)
 
 7. Perintah `fac 8`
 
-   *(Menampilkan `know your limit little bro.` Soalnya 8! = 40320 overflow integer 16-bit)*
+![Pasted image 20260605105540.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105540.png)
 
 8. Perintah `season winter`
 
-   *(Teks berubah jadi biru terang)*
+![Pasted image 20260605105634.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105634.png)
 
 9. Perintah `season radiant`
 
-   *(Teks berubah jadi magenta/pink)*
+![Pasted image 20260605105634.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105634.png)
 
 10. Perintah `triangle 4`
 
-    *(Menampilkan segitiga siku-siku 4 baris dari karakter `x`)*
+![Pasted image 20260605105740.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105740.png)
 
 11. Perintah `clear`
 
-    *(Layar dibersihkan dan kursor kembali ke pojok kiri atas)*
+![Pasted image 20260605105654.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105654.png)
+![Pasted image 20260605105709.png](https://github.com/saktisadhana/SISOP-5-2026-IT-101/raw/main/Assets/Pasted%20image%2020260605105709.png)
 
 #### Kendala / Error
 
